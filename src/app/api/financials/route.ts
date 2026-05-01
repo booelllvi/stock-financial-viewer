@@ -173,6 +173,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Start AV earnings fetch immediately (runs in parallel with income fetch)
+    const avEarningsPromise = avKey ? fetchAVEarnings(symbol, period, avKey) : null
+
     let incomeData: { date: string; [key: string]: unknown }[] | null = null
 
     // 1. Try FMP first
@@ -211,8 +214,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // 3. Enrich with Non-GAAP EPS + estimates from AV EARNINGS (parallel fetch)
-    const avEarnings = avKey ? await fetchAVEarnings(symbol, period, avKey) : null
+    // 3. Enrich with Non-GAAP EPS + estimates (already fetching in parallel)
+    const avEarnings = avEarningsPromise ? await avEarningsPromise : null
     const enriched = enrichWithEarnings(incomeData, avEarnings)
 
     return Response.json(enriched)
