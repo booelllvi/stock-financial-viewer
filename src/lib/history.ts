@@ -13,7 +13,7 @@ const VERSION_KEY = 'fmp_history_version'
 const MAX = 10
 
 /** Bump this when API response schema changes to auto-invalidate old cache */
-const CACHE_VERSION = 2
+const CACHE_VERSION = 3
 
 function checkVersion(): void {
   try {

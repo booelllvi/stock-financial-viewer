@@ -9,7 +9,8 @@ import ErrorMessage from '@/components/ErrorMessage'
 import ApiCounter, { incrementUsage } from '@/components/ApiCounter'
 import SearchHistory from '@/components/SearchHistory'
 import EpsChart from '@/components/EpsChart'
-import { saveHistory, getHistory, type HistoryEntry } from '@/lib/history'
+import RetroCounter from '@/components/RetroCounter'
+import { saveHistory, getHistory, clearHistory, type HistoryEntry } from '@/lib/history'
 
 type Period = 'annual' | 'quarter'
 
@@ -130,7 +131,28 @@ export default function Home() {
         )}
       </div>
 
-      {/* Footer — hidden */}
+      {/* Clear cache button */}
+      <button
+        onClick={() => {
+          clearHistory()
+          setData(null)
+          setHistoryKey((k) => k + 1)
+        }}
+        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-150 active:scale-95 hover:opacity-70"
+        style={{
+          background: 'rgba(0,0,0,0.04)',
+          border: '1px solid rgba(0,0,0,0.08)',
+          color: 'rgba(0,0,0,0.4)',
+        }}
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M2 3h8M4.5 3V2a1 1 0 011-1h1a1 1 0 011 1v1M9 3v6.5a1 1 0 01-1 1H4a1 1 0 01-1-1V3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        Clear Cache
+      </button>
+
+      {/* Retro visit counter */}
+      <RetroCounter />
     </main>
   )
 }
