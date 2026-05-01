@@ -8,6 +8,7 @@ import LoadingSkeleton from '@/components/LoadingSkeleton'
 import ErrorMessage from '@/components/ErrorMessage'
 import ApiCounter, { incrementUsage } from '@/components/ApiCounter'
 import SearchHistory from '@/components/SearchHistory'
+import EpsChart from '@/components/EpsChart'
 import { saveHistory, getHistory, type HistoryEntry } from '@/lib/history'
 
 type Period = 'annual' | 'quarter'
@@ -110,11 +111,16 @@ export default function Home() {
         {loading && <LoadingSkeleton />}
         {!loading && error && <ErrorMessage message={error} />}
         {!loading && !error && data && (
-          <IncomeTable
-            data={data}
-            symbol={ticker}
-            onRefresh={() => fetchData(ticker, period, true)}
-          />
+          <>
+            <IncomeTable
+              data={data}
+              symbol={ticker}
+              onRefresh={() => fetchData(ticker, period, true)}
+            />
+            <div className="mt-6">
+              <EpsChart data={data} />
+            </div>
+          </>
         )}
         {!loading && !error && !data && (
           <div className="text-center py-20" style={{ color: 'rgba(0,0,0,0.2)' }}>
