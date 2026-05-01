@@ -30,20 +30,22 @@ interface AVEarningsRecord {
   surprisePercentage: string
 }
 
-/** Fetch quarterly/annual Non-GAAP EPS + estimates from Alpha Vantage EARNINGS */
-async function fetchAVEarnings(symbol: string, period: string, apiKey: string) {
-  try {
-    const url = `https://www.alphavantage.co/query?function=EARNINGS&symbol=${symbol}&apikey=${apiKey}`
-    const res = await fetch(url)
-    if (!res.ok) return null
-    const raw = await res.json()
-    if (raw['Information'] || raw['Note']) return null
-    const records: AVEarningsRecord[] =
-      period === 'annual' ? raw.annualEarnings : raw.quarterlyEarnings
-    return Array.isArray(records) ? records : null
-  } catch {
-    return null
+/** Fetch quarterly/annual Non-GAAP EPS + estimates from Alpha Vantage EARNINGS.
+ *  Tries multiple API keys on rate limit. */
+async function fetchAVEarnings(symbol: string, period: string, apiKeys: string[]) {
+  for (const key of apiKeys) {
+    try {
+      const url = `https://www.alphavantage.co/query?function=EARNINGS&symbol=${symbol}&apikey=${key}`
+      const res = await fetch(url)
+      if (!res.ok) continue
+      const raw = await res.json()
+      if (raw['Information'] || raw['Note']) continue // rate-limited, try next key
+      const records: AVEarningsRecord[] =
+        period === 'annual' ? raw.annualEarnings : raw.quarterlyEarnings
+      if (Array.isArray(records)) return records
+    } catch { /* try next key */ }
   }
+  return null
 }
 
 /** Match income statement record to AV earnings by fiscal year-month (IS uses
@@ -105,17 +107,16 @@ async function fetchFMP(symbol: string, period: string, apiKey: string) {
 
 // ── Alpha Vantage fallback ────────────────────────────────────────────────────
 
-async function fetchAV(symbol: string, period: string, apiKey: string) {
-  const url = `https://www.alphavantage.co/query?function=INCOME_STATEMENT&symbol=${symbol}&apikey=${apiKey}`
-  const res = await fetch(url)
-  if (!res.ok) return { status: res.status, data: null }
+async function fetchAV(symbol: string, period: string, apiKeys: string[]) {
+  for (const key of apiKeys) {
+    const url = `https://www.alphavantage.co/query?function=INCOME_STATEMENT&symbol=${symbol}&apikey=${key}`
+    const res = await fetch(url)
+    if (!res.ok) continue
 
-  const raw = await res.json()
+    const raw = await res.json()
 
-  // AV returns { Information: "..." } when rate-limited or key invalid
-  if (raw['Information'] || raw['Note']) {
-    return { status: 429 as const, data: null }
-  }
+    // AV returns { Information: "..." } when rate-limited → try next key
+    if (raw['Information'] || raw['Note']) continue
 
   const reports: Record<string, unknown>[] =
     period === 'annual' ? raw.annualReports : raw.quarterlyReports
@@ -124,31 +125,34 @@ async function fetchAV(symbol: string, period: string, apiKey: string) {
     return { status: 404 as const, data: null }
   }
 
-  const data = reports.slice(0, 5).map((item) => {
-    const date = String(item.fiscalDateEnding)
-    const yr = date.slice(0, 4)
-    const qtr = monthToQuarter(date)
-    return {
-      date,
-      symbol,
-      period: period === 'annual' ? 'FY' : qtr,
-      fiscalYear: yr,
-      revenue: parseNum(item.totalRevenue),
-      grossProfit: parseNum(item.grossProfit),
-      operatingIncome: parseNum(item.operatingIncome),
-      netIncome: parseNum(item.netIncome),
-      eps: NaN,
-      costOfRevenue: parseNum(item.costOfRevenue),
-      ebitda: parseNum(item.ebitda),
-      researchAndDevelopment: parseNum(item.researchAndDevelopment),
-      sga: parseNum(item.sellingGeneralAndAdministrative),
-      epsDiluted: NaN,
-      sharesOutDil: 0,
-      source: 'av' as const,
-    }
-  })
+    const data = reports.slice(0, 5).map((item) => {
+      const date = String(item.fiscalDateEnding)
+      const yr = date.slice(0, 4)
+      const qtr = monthToQuarter(date)
+      return {
+        date,
+        symbol,
+        period: period === 'annual' ? 'FY' : qtr,
+        fiscalYear: yr,
+        revenue: parseNum(item.totalRevenue),
+        grossProfit: parseNum(item.grossProfit),
+        operatingIncome: parseNum(item.operatingIncome),
+        netIncome: parseNum(item.netIncome),
+        eps: NaN,
+        costOfRevenue: parseNum(item.costOfRevenue),
+        ebitda: parseNum(item.ebitda),
+        researchAndDevelopment: parseNum(item.researchAndDevelopment),
+        sga: parseNum(item.sellingGeneralAndAdministrative),
+        epsDiluted: NaN,
+        sharesOutDil: 0,
+        source: 'av' as const,
+      }
+    })
 
-  return { status: 200 as const, data }
+    return { status: 200 as const, data }
+  }
+  // All keys exhausted
+  return { status: 429 as const, data: null }
 }
 
 // ── Route handler ─────────────────────────────────────────────────────────────
@@ -166,15 +170,20 @@ export async function GET(request: NextRequest) {
   }
 
   const fmpKey = process.env.FMP_API_KEY
-  const avKey = process.env.AV_API_KEY
+  const avKeys = [
+    process.env.AV_API_KEY,
+    process.env.AV_API_KEY_2,
+    process.env.AV_API_KEY_3,
+  ].filter(Boolean) as string[]
+  const avKey = avKeys[0] || null
 
-  if (!fmpKey && !avKey) {
+  if (!fmpKey && avKeys.length === 0) {
     return Response.json({ error: 'No API keys configured' }, { status: 500 })
   }
 
   try {
     // Start AV earnings fetch immediately (runs in parallel with income fetch)
-    const avEarningsPromise = avKey ? fetchAVEarnings(symbol, period, avKey) : null
+    const avEarningsPromise = avKeys.length > 0 ? fetchAVEarnings(symbol, period, avKeys) : null
 
     let incomeData: { date: string; [key: string]: unknown }[] | null = null
 
@@ -188,9 +197,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 2. Fallback to Alpha Vantage income statement
-    if (!incomeData && avKey) {
-      const av = await fetchAV(symbol, period, avKey)
+    // 2. Fallback to Alpha Vantage income statement (rotates keys)
+    if (!incomeData && avKeys.length > 0) {
+      const av = await fetchAV(symbol, period, avKeys)
       if (av.status === 200 && av.data) {
         incomeData = av.data
       } else if (av.status === 429) {
@@ -200,8 +209,6 @@ export async function GET(request: NextRequest) {
         )
       } else if (av.status === 404) {
         return Response.json({ error: `No data found for "${symbol}"` }, { status: 404 })
-      } else {
-        return Response.json({ error: `Alpha Vantage error ${av.status}` }, { status: 502 })
       }
     }
 
