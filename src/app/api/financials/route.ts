@@ -91,6 +91,12 @@ async function fetchFMP(symbol: string, period: string, apiKey: string) {
     operatingIncome: parseNum(item.operatingIncome),
     netIncome: parseNum(item.netIncome),
     eps: parseNum(item.eps),
+    costOfRevenue: parseNum(item.costOfRevenue),
+    ebitda: parseNum(item.ebitda),
+    researchAndDevelopment: parseNum(item.researchAndDevelopmentExpenses),
+    sga: parseNum(item.sellingGeneralAndAdministrativeExpenses),
+    epsDiluted: parseNum(item.epsDiluted),
+    sharesOutDil: parseNum(item.weightedAverageShsOutDil),
     source: 'fmp' as const,
   }))
 
@@ -131,7 +137,13 @@ async function fetchAV(symbol: string, period: string, apiKey: string) {
       grossProfit: parseNum(item.grossProfit),
       operatingIncome: parseNum(item.operatingIncome),
       netIncome: parseNum(item.netIncome),
-      eps: NaN, // AV income statement has no EPS
+      eps: NaN,
+      costOfRevenue: parseNum(item.costOfRevenue),
+      ebitda: parseNum(item.ebitda),
+      researchAndDevelopment: parseNum(item.researchAndDevelopment),
+      sga: parseNum(item.sellingGeneralAndAdministrative),
+      epsDiluted: NaN,
+      sharesOutDil: 0,
       source: 'av' as const,
     }
   })

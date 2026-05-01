@@ -120,10 +120,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* Footer */}
-      <p className="text-[11px]" style={{ color: 'rgba(0,0,0,0.25)' }}>
-        * API usage is estimated (localStorage). Click counter to view exact usage on FMP Dashboard.
-      </p>
+      {/* Footer — hidden */}
     </main>
   )
 }
