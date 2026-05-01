@@ -9,10 +9,25 @@ export interface HistoryEntry {
 }
 
 const KEY = 'fmp_history'
+const VERSION_KEY = 'fmp_history_version'
 const MAX = 10
+
+/** Bump this when API response schema changes to auto-invalidate old cache */
+const CACHE_VERSION = 2
+
+function checkVersion(): void {
+  try {
+    const v = localStorage.getItem(VERSION_KEY)
+    if (v !== String(CACHE_VERSION)) {
+      localStorage.removeItem(KEY)
+      localStorage.setItem(VERSION_KEY, String(CACHE_VERSION))
+    }
+  } catch { /* ignore */ }
+}
 
 export function getHistory(): HistoryEntry[] {
   try {
+    checkVersion()
     const raw = localStorage.getItem(KEY)
     return raw ? JSON.parse(raw) : []
   } catch {
@@ -23,7 +38,6 @@ export function getHistory(): HistoryEntry[] {
 export function saveHistory(entry: Omit<HistoryEntry, 'id' | 'timestamp'>): void {
   const history = getHistory()
   const id = `${entry.symbol}-${entry.period}`
-  // Remove duplicate (same symbol+period), add to front
   const filtered = history.filter((h) => h.id !== id)
   const next: HistoryEntry[] = [
     { ...entry, id, timestamp: Date.now() },

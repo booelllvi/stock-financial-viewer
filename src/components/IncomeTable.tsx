@@ -27,6 +27,7 @@ export interface FinancialData {
 interface IncomeTableProps {
   data: FinancialData[]
   symbol: string
+  onRefresh?: () => void
 }
 
 // ── Formatters ───────────────────────────────────────────────────────────────
@@ -256,7 +257,7 @@ function TableSection({ rows, sorted, startIdx }: {
 
 // ── Main component ───────────────────────────────────────────────────────────
 
-export default function IncomeTable({ data, symbol }: IncomeTableProps) {
+export default function IncomeTable({ data, symbol, onRefresh }: IncomeTableProps) {
   const [copied, setCopied] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
 
@@ -318,6 +319,22 @@ export default function IncomeTable({ data, symbol }: IncomeTableProps) {
             </>
           )}
         </button>
+
+        {/* Refresh button */}
+        {onRefresh && (
+          <button
+            onClick={onRefresh}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-150 active:scale-95 hover:opacity-70"
+            style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.1)', color: 'rgba(0,0,0,0.55)' }}
+            title="Re-fetch latest data from API"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M1.5 6a4.5 4.5 0 018.25-2.5M10.5 6a4.5 4.5 0 01-8.25 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+              <path d="M9.5 1v2.5H7M2.5 11V8.5H5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Refresh
+          </button>
+        )}
 
         {/* Data source badge */}
         {data[0]?.source === 'av' && (

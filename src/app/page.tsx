@@ -110,7 +110,11 @@ export default function Home() {
         {loading && <LoadingSkeleton />}
         {!loading && error && <ErrorMessage message={error} />}
         {!loading && !error && data && (
-          <IncomeTable data={data} symbol={ticker} />
+          <IncomeTable
+            data={data}
+            symbol={ticker}
+            onRefresh={() => fetchData(ticker, period, true)}
+          />
         )}
         {!loading && !error && !data && (
           <div className="text-center py-20" style={{ color: 'rgba(0,0,0,0.2)' }}>
