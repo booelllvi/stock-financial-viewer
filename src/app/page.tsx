@@ -9,6 +9,8 @@ import ErrorMessage from '@/components/ErrorMessage'
 import ApiCounter, { incrementUsage } from '@/components/ApiCounter'
 import SearchHistory from '@/components/SearchHistory'
 import EpsChart from '@/components/EpsChart'
+import EpsYoY from '@/components/EpsYoY'
+import StockChart from '@/components/StockChart'
 import RetroCounter from '@/components/RetroCounter'
 import { saveHistory, getHistory, clearHistory, type HistoryEntry } from '@/lib/history'
 
@@ -126,6 +128,12 @@ export default function Home() {
             />
             <div className="mt-6">
               <EpsChart data={data} />
+            </div>
+            <div className="mt-6">
+              <EpsYoY data={data} />
+            </div>
+            <div className="mt-6">
+              <StockChart symbol={ticker} />
             </div>
           </>
         )}
