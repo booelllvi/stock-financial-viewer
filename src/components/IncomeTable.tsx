@@ -28,6 +28,7 @@ interface IncomeTableProps {
   data: FinancialData[]
   symbol: string
   onRefresh?: () => void
+  onLoad12Q?: () => void
 }
 
 // ── Formatters ───────────────────────────────────────────────────────────────
@@ -192,9 +193,6 @@ const MARGIN_KEYS = new Set(['grossMargin', 'operatingMargin', 'netMargin'])
 function RowBadge({ rowKey, value, prevValue, item }: {
   rowKey: string; value: number; prevValue: number | undefined; item: FinancialData
 }) {
-  if (rowKey === 'epsNonGaap') {
-    return <SurpriseBadge actual={value} estimate={item.epsEstimate ?? NaN} />
-  }
   if (rowKey === 'epsEstimate') {
     return <SurpriseBadge actual={item.epsNonGaap ?? NaN} estimate={value} />
   }
@@ -260,7 +258,7 @@ function TableSection({ rows, sorted, startIdx }: {
 
 // ── Main component ───────────────────────────────────────────────────────────
 
-export default function IncomeTable({ data, symbol, onRefresh }: IncomeTableProps) {
+export default function IncomeTable({ data, symbol, onRefresh, onLoad12Q }: IncomeTableProps) {
   const [copied, setCopied] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
 
@@ -336,6 +334,25 @@ export default function IncomeTable({ data, symbol, onRefresh }: IncomeTableProp
               <path d="M9.5 1v2.5H7M2.5 11V8.5H5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             Refresh
+          </button>
+        )}
+
+        {/* Load 12Q button — only for quarterly with ≤5 results */}
+        {onLoad12Q && isQuarterly && data.length <= 5 && (
+          <button
+            onClick={onLoad12Q}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-150 active:scale-95 hover:opacity-70"
+            style={{
+              background: 'rgba(120,80,200,0.08)',
+              border: '1px solid rgba(120,80,200,0.2)',
+              color: '#7850c8',
+            }}
+            title="Load 12 quarters via Alpha Vantage (GAAP EPS not available)"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            Load 12Q
           </button>
         )}
 

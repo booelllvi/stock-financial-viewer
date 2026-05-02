@@ -35,9 +35,9 @@ export function getHistory(): HistoryEntry[] {
   }
 }
 
-export function saveHistory(entry: Omit<HistoryEntry, 'id' | 'timestamp'>): void {
+export function saveHistory(entry: Omit<HistoryEntry, 'id' | 'timestamp'> & { limit?: number }): void {
   const history = getHistory()
-  const id = `${entry.symbol}-${entry.period}`
+  const id = entry.limit ? `${entry.symbol}-${entry.period}-${entry.limit}` : `${entry.symbol}-${entry.period}`
   const filtered = history.filter((h) => h.id !== id)
   const next: HistoryEntry[] = [
     { ...entry, id, timestamp: Date.now() },

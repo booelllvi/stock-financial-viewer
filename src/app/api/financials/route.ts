@@ -107,7 +107,7 @@ async function fetchFMP(symbol: string, period: string, apiKey: string) {
 
 // ── Alpha Vantage fallback ────────────────────────────────────────────────────
 
-async function fetchAV(symbol: string, period: string, apiKeys: string[]) {
+async function fetchAV(symbol: string, period: string, apiKeys: string[], limit = 12) {
   for (const key of apiKeys) {
     const url = `https://www.alphavantage.co/query?function=INCOME_STATEMENT&symbol=${symbol}&apikey=${key}`
     const res = await fetch(url)
@@ -125,7 +125,7 @@ async function fetchAV(symbol: string, period: string, apiKeys: string[]) {
     return { status: 404 as const, data: null }
   }
 
-    const data = reports.slice(0, 5).map((item) => {
+    const data = reports.slice(0, limit).map((item) => {
       const date = String(item.fiscalDateEnding)
       const yr = date.slice(0, 4)
       const qtr = monthToQuarter(date)
@@ -161,6 +161,8 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const symbol = searchParams.get('symbol')?.toUpperCase().trim()
   const period = searchParams.get('period') ?? 'annual'
+  const limit = Math.min(Math.max(parseInt(searchParams.get('limit') ?? '0', 10) || 0, 0), 20)
+  const forceAV = limit > 5 // FMP free plan caps at 5, so use AV for more
 
   if (!symbol || !/^[A-Z]{1,5}$/.test(symbol)) {
     return Response.json({ error: 'Invalid ticker symbol' }, { status: 400 })
@@ -187,8 +189,8 @@ export async function GET(request: NextRequest) {
 
     let incomeData: { date: string; [key: string]: unknown }[] | null = null
 
-    // 1. Try FMP first
-    if (fmpKey) {
+    // 1. Try FMP first (skip if user requested >5 quarters — FMP free caps at 5)
+    if (fmpKey && !forceAV) {
       const fmp = await fetchFMP(symbol, period, fmpKey)
       if (fmp.status === 200 && fmp.data) {
         incomeData = fmp.data
@@ -197,9 +199,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 2. Fallback to Alpha Vantage income statement (rotates keys)
+    // 2. Fallback to Alpha Vantage income statement (or forced for >5 quarters)
     if (!incomeData && avKeys.length > 0) {
-      const av = await fetchAV(symbol, period, avKeys)
+      const avLimit = limit > 0 ? limit : 12
+      const av = await fetchAV(symbol, period, avKeys, avLimit)
       if (av.status === 200 && av.data) {
         incomeData = av.data
       } else if (av.status === 429) {

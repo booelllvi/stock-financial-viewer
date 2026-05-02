@@ -22,10 +22,11 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const [historyKey, setHistoryKey] = useState(0)
 
-  const fetchData = useCallback(async (symbol: string, p: Period, forceRefresh = false) => {
+  const fetchData = useCallback(async (symbol: string, p: Period, forceRefresh = false, limit?: number) => {
     // Check localStorage cache first (skip on explicit refresh)
+    const cacheId = limit ? `${symbol}-${p}-${limit}` : `${symbol}-${p}`
     if (!forceRefresh) {
-      const cached = getHistory().find((h) => h.id === `${symbol}-${p}`)
+      const cached = getHistory().find((h) => h.id === cacheId)
       if (cached) {
         setData(cached.data)
         setError(null)
@@ -37,13 +38,14 @@ export default function Home() {
     setError(null)
     setData(null)
     try {
-      const res = await fetch(`/api/financials?symbol=${encodeURIComponent(symbol)}&period=${p}`)
+      const limitParam = limit ? `&limit=${limit}` : ''
+      const res = await fetch(`/api/financials?symbol=${encodeURIComponent(symbol)}&period=${p}${limitParam}`)
       const json = await res.json()
       if (!res.ok) {
         setError(json.error ?? 'Something went wrong')
       } else {
         setData(json)
-        saveHistory({ symbol, period: p, data: json })
+        saveHistory({ symbol, period: p, data: json, limit })
         setHistoryKey((k) => k + 1)
         incrementUsage()
         window.dispatchEvent(new Event('fmp-usage-updated'))
@@ -120,6 +122,7 @@ export default function Home() {
               data={data}
               symbol={ticker}
               onRefresh={() => fetchData(ticker, period, true)}
+              onLoad12Q={period === 'quarter' ? () => fetchData(ticker, period, true, 12) : undefined}
             />
             <div className="mt-6">
               <EpsChart data={data} />
