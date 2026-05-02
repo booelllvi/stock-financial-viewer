@@ -176,6 +176,8 @@ export async function GET(request: NextRequest) {
     process.env.AV_API_KEY,
     process.env.AV_API_KEY_2,
     process.env.AV_API_KEY_3,
+    process.env.AV_API_KEY_4,
+    process.env.AV_API_KEY_5,
   ].filter(Boolean) as string[]
   const avKey = avKeys[0] || null
 
