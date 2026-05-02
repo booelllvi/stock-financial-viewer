@@ -33,9 +33,13 @@ export default function StockChart({ symbol }: StockChartProps) {
 
     const wrapper = document.createElement('div')
     wrapper.className = 'tradingview-widget-container__widget'
-    wrapper.style.height = '100%'
+    wrapper.style.height = 'calc(100% - 0px)'
     wrapper.style.width = '100%'
+    wrapper.style.position = 'absolute'
+    wrapper.style.top = '0'
+    wrapper.style.left = '0'
 
+    containerRef.current.style.position = 'relative'
     containerRef.current.appendChild(wrapper)
     containerRef.current.appendChild(script)
   }, [symbol])
@@ -53,7 +57,7 @@ export default function StockChart({ symbol }: StockChartProps) {
       <div
         ref={containerRef}
         className="tradingview-widget-container"
-        style={{ height: '700px', width: '100%' }}
+        style={{ height: '600px', width: '100%', position: 'relative' }}
       />
     </div>
   )
