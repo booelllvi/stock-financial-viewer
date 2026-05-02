@@ -53,7 +53,7 @@ export default function StockChart({ symbol }: StockChartProps) {
       <div
         ref={containerRef}
         className="tradingview-widget-container"
-        style={{ height: '500px', width: '100%' }}
+        style={{ height: '700px', width: '100%' }}
       />
     </div>
   )
