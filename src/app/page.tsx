@@ -96,6 +96,9 @@ export default function Home() {
         <ApiCounter />
       </div>
 
+      {/* Retro visit counter */}
+      <RetroCounter />
+
       {/* Search */}
       <SearchBar onSearch={handleSearch} loading={loading} />
 
@@ -151,8 +154,6 @@ export default function Home() {
         Clear Cache
       </button>
 
-      {/* Retro visit counter */}
-      <RetroCounter />
     </main>
   )
 }

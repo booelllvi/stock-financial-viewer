@@ -195,8 +195,11 @@ function RowBadge({ rowKey, value, prevValue, item }: {
   if (rowKey === 'epsNonGaap') {
     return <SurpriseBadge actual={value} estimate={item.epsEstimate ?? NaN} />
   }
+  if (rowKey === 'epsEstimate') {
+    return <SurpriseBadge actual={item.epsNonGaap ?? NaN} estimate={value} />
+  }
   if (MARGIN_KEYS.has(rowKey)) {
-    return null // margin rows show % in the value itself
+    return null
   }
   return <TrendBadge value={value} prev={prevValue} />
 }
